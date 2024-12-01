@@ -8,6 +8,7 @@ import os
 import socket
 import sys
 from urllib.parse import urljoin
+from datetime import datetime
 
 # Third-party
 import requests
@@ -32,7 +33,7 @@ def get_zone_ip(section):
 
     session = requests.Session()
     session.mount("https://", HTTPAdapter(max_retries=MAX_RETRIES))
-    resp = session.get(api_url, headers={"X-Api-Key": section["apikey"]})
+    resp = session.get(api_url, headers={"Authorization": f"Bearer {section['apikey']}"})
     resp.raise_for_status()
 
     current_zone = resp.json()
@@ -89,7 +90,7 @@ def change_zone_ip(section, new_ip):
         ],
     }
 
-    resp = requests.put(api_url, json=body, headers={"X-Api-Key": apikey})
+    resp = requests.put(api_url, json=body, headers={"Authorization": f"Bearer {apikey}"})
     resp.raise_for_status()
 
 
@@ -114,11 +115,13 @@ def main():
         current_ip = socket.gethostbyname(config.get(section, "host"))
         if current_ip == "127.0.0.1":
             current_ip = get_ip()
-
+        t = datetime.now()
         if zone_ip.strip() == current_ip.strip():
+            print(f"{t} Current IP matches DNS record: {current_ip} == {zone_ip}")
             continue
         else:
             print(
+                f"{t}",
                 "DNS Mistmatch detected:  A-record:",
                 zone_ip,
                 " WAN IP:",
